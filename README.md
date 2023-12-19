@@ -42,3 +42,7 @@ Auberge-Refuge de la Nova has 0 places left on Thursday, Jul 11, 2024
 Les Chambres du Soleil has 0 places left on Thursday, Jul 11, 2024
 Waiting to check availability: 04:57
 ```
+
+# General Note
+
+This script has plenty of caching and rate-limiting built in so we don't flood the website and make them angry. Don't mess with the rate limits, or this will end up broken _very_ quickly.
