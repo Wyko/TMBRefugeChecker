@@ -361,7 +361,7 @@ def show():
     names = mb.get_refuge_names()
     print(f"Found {len(names)} refuges:")
     for name in names:
-        print(f"{name.id+':':<8} {name.name}")
+        print(f"{str(name.id)+':':<8} {name.name}")
 
 
 @app.command()
