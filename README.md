@@ -2,11 +2,11 @@
 
 Checks the refuges listed on montourdumontblanc.com for availability. I wrote this because checking for the availability of a hut on the TMB was the next best thing to impossible after November, and so I was left looking for cancellations. I hope this helps you guys too!
 
-And yeah, I'm still actively using this right now. I just wanted to help other people too.
+And yes, I'm still actively using this right now. I just wanted to help other people too.
 
-So if you could, please stay away from de la Nova and Soleil on July 11... :)
+So if you could, please stay away from **de la Nova** and **Les Chambres du Soleil** on July 11... :smile:
 
-Drop me an email or start a post in Discussions if this helped you! For real though, I love hearing from people.
+Drop me an email or start a post in Discussions if this helped you!
 
 # Installation
 
