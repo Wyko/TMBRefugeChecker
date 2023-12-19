@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "montblanc/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "check",
+                "2023.07.11",
+                "116701",
+                "nova",
+            ]
+        }
+    ]
+}
