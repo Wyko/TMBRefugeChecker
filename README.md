@@ -8,6 +8,11 @@ So if you could, please stay away from **de la Nova** and **Les Chambres du Sole
 
 Drop me an email or start a post in Discussions if this helped you!
 
+# Prerequisites
+
+- Python 3.11
+- Git
+
 # Installation
 
 ```bash
