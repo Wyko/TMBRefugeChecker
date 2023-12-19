@@ -9,9 +9,9 @@
             "console": "integratedTerminal",
             "args": [
                 "check",
-                "2023.07.11",
-                "116701",
-                "nova",
+                "2024.07.11",
+                "solei",
+                "nova"
             ]
         }
     ]

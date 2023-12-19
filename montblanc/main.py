@@ -74,7 +74,7 @@ class Montblanc:
         self.get_refuge_names()
 
     @ttl_cache(maxsize=100, ttl=REFRESH_TIMEOUT)
-    def _query_status(self, date: datetime, refuge_id: int = 32367) -> dict:
+    def _query_status(self, date: datetime, refuge_id: int) -> dict:
         """Query the status of a refuge on a given date.
 
         Do not call this method directly. Instead, use `get_availability` for the caching.
@@ -105,7 +105,7 @@ class Montblanc:
         response = json.loads(r.text.strip("()[]")).get("planning", list())
 
         for item in response:
-            d = date + timedelta(item["d"])
+            d = date + timedelta(days=item["d"])
             self.availability[d] = {
                 "places": item["s"],
                 "closed": item["f"] == 1,
