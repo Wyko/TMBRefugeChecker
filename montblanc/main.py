@@ -207,7 +207,7 @@ class Montblanc:
 
         soup = BeautifulSoup(r.text, "html.parser")
 
-        refuge_ids = []
+        refuges = []
 
         refuge_tabs = soup.find("div", {"id": "tabsrefuges"})
         listings = refuge_tabs.find_all("div", {"class": "refuge"})
@@ -220,10 +220,11 @@ class Montblanc:
 
             name = refuge.find("div", {"class": "bloccontenurefuge"}).h3.text
             logger.debug(f"Refuge {name} ID is {_id}")
-            refuge_ids.append(Refuge(id=_id, name=name))
+            refuges.append(Refuge(id=_id, name=name))
 
-        logger.info(f"Found {len(refuge_ids)} refuges")
-        return refuge_ids
+        logger.info(f"Found {len(refuges)} refuges")
+        refuges.sort(key=lambda x: x.name)
+        return refuges
 
     def refuge_by_name(self, refuge_name: str) -> Refuge:
         """Lookup a Refuge by its name.
