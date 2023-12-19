@@ -22,6 +22,7 @@ Found 40 refuges:
 >> montblanc check 2024.07.01 32400 Glaciers Abri
 
 !!! Refuge Auberge Gîte Bon Abri has 13 places left on Monday, Jul 01, 2024 !!!
+<Beeping Alert Sounds>
 
 >> montblanc check 2024.07.11 nova solei
 
