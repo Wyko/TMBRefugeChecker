@@ -6,6 +6,8 @@ And yeah, I'm still actively using this right now. I just wanted to help other p
 
 So if you could, please stay away from de la Nova and Soleil on July 11... :)
 
+Drop me an email or start a post in Discussions if this helped you! For real though, I love hearing from people.
+
 # Installation
 
 ```bash
