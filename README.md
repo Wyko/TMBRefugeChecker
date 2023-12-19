@@ -11,7 +11,7 @@ Drop me an email or start a post in Discussions if this helped you!
 # Installation
 
 ```bash
->> pip install git+https://github.com/Wyko/TMBRefugeChecker.git
+pip install git+https://github.com/Wyko/TMBRefugeChecker.git
 ```
 
 # Usage
