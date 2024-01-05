@@ -23,7 +23,9 @@ import os
 import re
 import time
 import winsound
+from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List
 
 import httpx
@@ -44,6 +46,9 @@ logger = logging.getLogger(__name__)
 class Refuge(pydantic.BaseModel):
     id: int
     name: str
+
+    def __hash__(self) -> int:
+        return hash((self.id, self.name))
 
 
 class Montblanc:
@@ -151,9 +156,7 @@ class Montblanc:
             r"https://jsonp.open-system.fr/jsonp.aspx?px=http://www.montourdumontblanc.com/uk/json-listezonesgeo.xml",
         )
         r.raise_for_status()
-        response: list[dict[str, str]] = json.loads(r.text.strip("()[]\r\n ;"))[
-            "ListeId"
-        ]
+        response: list[dict[str, str]] = json.loads(r.text.strip("()[]\r\n ;"))["ListeId"]
         for loc in response:
             loc["Nom"] = loc["Nom"].replace("&nbsp;", "'").strip("- '")
             loc["Id"] = loc["Id"].strip().split(",")
@@ -162,26 +165,24 @@ class Montblanc:
         return response
 
     def alert_on_availability(
-        self, date: datetime, refuge: Refuge, min_places: int = 3
-    ):
+        self, date: datetime, refuge: Refuge, min_places: int = 3, noise: bool = True
+    ) -> bool:
         """Print an alert if there are more than `min_places` places available at `refuge_id` on `date`"""
         availability = self.get_availability(date, refuge.id)
         if availability["closed"]:
-            print(
-                f"Refuge {refuge.name} is closed on {date.strftime(r'%A, %b %d, %Y')}"
-            )
-            return
+            print(f"Refuge {refuge.name} is closed on {date.strftime(r'%A, %b %d, %Y')}")
+            return False
 
         if availability["places"] > min_places:
             print(
                 f"!!! Refuge {refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')} !!!"
             )
-            self._make_noise()
-            return
+            if noise:
+                self._make_noise()
+            return True
 
-        print(
-            f"{refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')}"
-        )
+        print(f"{refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')}")
+        return False
 
     def _make_noise(self):
         """Make a noise to alert the user."""
@@ -269,9 +270,7 @@ class Montblanc:
 mb = Montblanc()
 
 
-def check_refuges(
-    refuges: list[int | str | Refuge], date: datetime, min_places: int = 3
-):
+def check_refuges(refuges: list[int | str | Refuge], date: datetime, min_places: int = 3):
     """Check the availability of a list of refuges on a given date.
 
     The function will print an alert if there are more than `min_places` places available at any of the
@@ -297,25 +296,22 @@ def check_refuges(
             mb.alert_on_availability(date, refuge, min_places)
 
         # Wait for the refresh timeout
-        for _ in tqdm(
-            range(mb.REFRESH_TIMEOUT * 2),
-            leave=False,
-            ncols=80,
-            bar_format="Waiting to check availability: {remaining} {bar}",
-        ):
-            time.sleep(0.5)
+        sleep_with_waiting_bar()
 
 
-def convert_refuge(refuge: int | str | Refuge):
+def convert_refuge(refuge: int | str | dict | Refuge):
+    """Convert a refuge (given as an Int, Str, dict or Refuge) to a Refuge object."""
     try:
         refuge = int(refuge)
-    except ValueError:
+    except (ValueError, TypeError):
         pass
 
     if isinstance(refuge, int):
         return mb.refuge_by_id(refuge)
     elif isinstance(refuge, Refuge):
         return refuge
+    elif isinstance(refuge, dict):
+        return Refuge.model_validate(refuge)
     else:
         return mb.refuge_by_name(refuge)
 
@@ -340,21 +336,189 @@ def check_region(region: str, date: datetime, min_places: int = 3):
         for refuge in mb.get_regions():
             if region in refuge["Nom"]:
                 for refuge_id in refuge["Id"]:
-                    mb.alert_on_availability(
-                        date, mb.refuge_by_id(refuge_id), min_places
-                    )
+                    mb.alert_on_availability(date, mb.refuge_by_id(refuge_id), min_places)
 
         # Wait for the refresh timeout
-        for _ in tqdm(
-            range(mb.REFRESH_TIMEOUT * 2),
-            leave=False,
-            ncols=80,
-            bar_format="Waiting to check availability: {remaining} {bar}",
-        ):
-            time.sleep(0.5)
+        sleep_with_waiting_bar()
+
+
+def sleep_with_waiting_bar(timeout: int = mb.REFRESH_TIMEOUT):
+    """Print a waiting bar to the terminal.
+
+    Args:
+        timeout (int, optional): The number of seconds to wait. Defaults to mb.REFRESH_TIMEOUT.
+    """
+
+    for _ in tqdm(
+        range(mb.REFRESH_TIMEOUT * 2),
+        leave=False,
+        ncols=80,
+        bar_format="Waiting to check availability: {remaining} {bar}",
+    ):
+        time.sleep(0.5)
+
+
+class Plan:
+    def __init__(self, path: str = None):
+        if path:
+            if not path.endswith(".json"):
+                raise ValueError(
+                    "Plan file must be a JSON file. THe path should end with '.json'. For "
+                    "example, 'C:/Users/Me/.monthblanc/plan.json'"
+                )
+            path = Path(path)
+            if not path.exists():
+                raise FileNotFoundError(f"Could not find plan at {path}")
+
+        else:
+            path = Path.home() / ".montblanc" / "default_plan.json"
+
+        self.days: dict[datetime, set[Refuge]] = defaultdict(set)
+        self.path: Path = path
+
+        self.load(path)
+
+    def check(self, min_places: int = 3):
+        """Check the availability of the refuges in the plan."""
+        if not self.days:
+            raise ValueError("No days have been added to the plan. Use `add_day` to add days to the plan.")
+
+        while True:
+            places_found = False
+            for day, refuges in self.days.items():
+                for refuge in refuges:
+                    if mb.alert_on_availability(day, refuge, min_places, noise=False):
+                        places_found = True
+
+            if places_found:
+                mb._make_noise()
+
+            sleep_with_waiting_bar()
+
+    def add_day(self, date: datetime, refuges: list[int | str | Refuge], print_refuges: bool = False):
+        """Add a day to the plan. If the day already exists, the refuges will replace the existing day.
+
+        Args:
+            date (datetime): The date of the day
+            refuges (list[int | str | Refuge]): A list of refuges to stay at on the given date
+        """
+        if not refuges:
+            self.days.pop(date, None)
+            if print_refuges:
+                print(f"Cleared {date.strftime(r'%A, %b %d, %Y')}")
+            self.save()
+            return
+
+        c_refuges = [convert_refuge(refuge) for refuge in refuges]
+        self.days[date] = set(c_refuges)
+        self.days = dict(sorted(self.days.items()))
+
+        if print_refuges:
+            print(f"Added {date.strftime(r'%A, %b %d, %Y')}:")
+            for refuge in c_refuges:
+                print(f"  - {refuge.name}")
+
+        self.save()
+
+    def save(self):
+        """Save the plan to a file."""
+        payload = {
+            "days": [
+                {
+                    "date": day.strftime(r"%Y-%m-%d"),
+                    "refuges": [r.model_dump() for r in refuges],
+                }
+                for day, refuges in self.days.items()
+            ]
+        }
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("w") as f:
+            json.dump(payload, f, indent=4)
+
+    def load(self, path: str):
+        """Load a plan from a file.
+
+        Args:
+            path (str): The path to load the plan from
+        """
+        path = Path(path)
+        if not path.exists():
+            self.days = defaultdict(set)
+            return
+
+        with open(path, "r") as f:
+            payload = json.load(f)
+
+        for day in payload["days"]:
+            refuges = [Refuge.model_validate(refuge) for refuge in day["refuges"]]
+            self.add_day(datetime.strptime(day["date"], r"%Y-%m-%d"), refuges)
+
+
+planner = typer.Typer()
+
+plan_path = Annotated[
+    str,
+    typer.Option(
+        "--path",
+        "-p",
+        help=(
+            "The filepath of the plan. Provide a full path eith a filename, including the "
+            ".json file extension. If omitted, a default plan will be used. "
+            "Any directories in the path will be created if they do not exist."
+            "\n\n[default: ~/.montblanc/default_plan.json]"
+        ),
+        show_default=False,
+    ),
+]
+
+
+@planner.command()
+def check(
+    path: plan_path = None,
+    min_places: Annotated[
+        int, typer.Option("-m", "--min-places", help="The minimum number of places to alert on.")
+    ] = 3,
+):
+    Plan(path).check(min_places)
+
+
+@planner.command(help="Add a day to the plan. A day can have zero or more refuges to check.")
+def day(
+    date: Annotated[
+        datetime,
+        typer.Argument(formats=["%Y-%m-%d", "%d/%m/%Y", "%Y.%m.%d"], help="The date.", show_default=False),
+    ],
+    refuges: Annotated[
+        List[str],
+        typer.Argument(
+            help=(
+                "The refuges to check. Refuges can be given as names or IDs. "
+                "If a refuge is given by name, you can give a partial name and the script will try to "
+                "find a match. To get a list of all refuges and their IDs, run [montblanc show]. "
+                "If this day already exists in the plan, the refuges will replace the existing refuges."
+                "\n\nSupplying zero refuges is allowed, and can be used to clear a day. "
+                "\n\nExample: "
+                '\n\n>> montblanc plan day 2024-09-11 32367 "de la Nova"'
+            ),
+            show_default=True,
+        ),
+    ] = None,
+    path: plan_path = None,
+):
+    Plan(path).add_day(date, refuges, print_refuges=True)
+
+
+@planner.command()
+def show(path: plan_path = None):
+    plan = Plan(path)
+    for day, refuges in plan.days.items():
+        print(f"{day.strftime(r'%A, %b %d, %Y')}:")
+        for refuge in refuges:
+            print(f"  - {refuge.name}")
 
 
 app = typer.Typer()
+app.add_typer(planner, name="plan")
 
 
 @app.command()
@@ -367,9 +531,7 @@ def show():
 
 @app.command()
 def check(
-    date: Annotated[
-        datetime, typer.Argument(formats=["%Y-%m-%d", "%d/%m/%Y", "%Y.%m.%d"])
-    ],
+    date: Annotated[datetime, typer.Argument(formats=["%Y-%m-%d", "%d/%m/%Y", "%Y.%m.%d"])],
     refuges: Annotated[List[str], typer.Argument()],
     min_places: int = 3,
 ):

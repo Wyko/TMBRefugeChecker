@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "MB: Check",
             "type": "python",
             "request": "launch",
             "program": "montblanc/main.py",
@@ -12,6 +12,31 @@
                 "2024.07.11",
                 "solei",
                 "nova"
+            ]
+        },
+        {
+            "name": "MB: Plan Add Day",
+            "type": "python",
+            "request": "launch",
+            "program": "montblanc/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "plan",
+                "day",
+                "2024.07.11",
+                "solei",
+                "nova"
+            ]
+        },
+        {
+            "name": "MB: Plan Check",
+            "type": "python",
+            "request": "launch",
+            "program": "montblanc/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "plan",
+                "check",
             ]
         }
     ]

@@ -26,7 +26,10 @@ build-backend = "poetry.core.masonry.api"
 select = ["E4", "E7", "E9", "F", "B", "W", "C901"]
 
 # 2. Avoid enforcing line-length violations (`E501`)
-ignore = ["E501"]
+# ignore = ["E501"]
+
+[tool.ruff]
+line-length = 110
 
 [tool.poetry.scripts]
 montblanc = 'montblanc.main:app'
