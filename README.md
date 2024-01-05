@@ -4,7 +4,7 @@ Checks the refuges listed on montourdumontblanc.com for availability. I wrote th
 
 And yes, I'm still actively using this right now. So if you could, please stay away from **de la Nova** and **Les Chambres du Soleil** on July 11... :smile:
 
-I love getting feedback. Please drop me an email or start a post in Discussions if this helped you!
+Please star the repo and start a post in Discussions if this helped you!
 
 # Prerequisites
 
