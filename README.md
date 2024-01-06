@@ -22,7 +22,7 @@ After installing it, just open a terminal (Command Prompt) and type in the appro
 All commands start with `montblanc`, and you can run `montblanc --help` to see guidance on how to use
 it.
 ```bash
->> montblanc show
+>> montblanc list
 
 Found 40 refuges:
 32400:   Auberge Gîte Bon Abri
