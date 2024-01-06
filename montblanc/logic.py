@@ -69,7 +69,7 @@ class Montblanc:
 
     def __init__(self):
         self.client = httpx.Client()
-        self.availability = {}
+        self.availability = defaultdict(dict)
         self.get_refuge_names()
 
     @ttl_cache(maxsize=100, ttl=REFRESH_TIMEOUT)
@@ -106,14 +106,14 @@ class Montblanc:
 
         for item in response:
             d = date + timedelta(days=item["d"])
-            self.availability[d] = {
+            self.availability[refuge_id][d] = {
                 "places": item["s"],
                 "closed": item["f"] == 1,
                 "retrieved": datetime.now(),
                 "bookable": True,
             }
 
-        return self.availability[date]
+        return self.availability[refuge_id][date]
 
     def get_availability(self, date: datetime, refuge: Refuge) -> dict:
         """Get the availability of a refuge on a given date.
@@ -137,8 +137,9 @@ class Montblanc:
         """
         # Check if the availability is cached and not stale
         if (
-            date in self.availability
-            and self.availability[date]["retrieved"]
+            refuge.id in self.availability
+            and date in self.availability[refuge.id]
+            and self.availability[refuge.id][date]["retrieved"]
             > datetime.now() - timedelta(seconds=self.REFRESH_TIMEOUT)
             and True
         ):
