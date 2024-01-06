@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "montblanc"
-version = "0.2.0"
+version = "0.3.0"
 description = ""
 authors = ["Wyko ter Haar <wyko.ter.haar@gmail.com>"]
 readme = "README.md"
@@ -30,6 +30,8 @@ select = ["E4", "E7", "E9", "F", "B", "W", "C901"]
 
 [tool.ruff]
 line-length = 110
+fix = true
+unsafe-fixes = true
 
 [tool.poetry.scripts]
 montblanc = 'montblanc.main:app'

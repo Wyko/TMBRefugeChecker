@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import List
 
 import httpx
-import pydantic
 import times
 import typer
 from bs4 import BeautifulSoup
@@ -37,18 +36,16 @@ from cachetools.func import ttl_cache
 from tqdm import tqdm
 from typing_extensions import Annotated
 
+from montblanc import types
+from montblanc.refuges import (
+    Refuge,
+    du_lac_blanc,
+)
+
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
-
-
-class Refuge(pydantic.BaseModel):
-    id: int
-    name: str
-
-    def __hash__(self) -> int:
-        return hash((self.id, self.name))
 
 
 class Montblanc:
@@ -97,6 +94,7 @@ class Montblanc:
                 "places": 4,
                 "closed": False,
                 "retrieved": datetime(2021, 8, 1, 12, 0, 0),
+                "bookable": True,  # If the booking system is even open yet.
             }
         """
         logger.debug(f"Querying {refuge_id} on {date.strftime(r'%A, %b %d, %Y')}")
@@ -115,18 +113,19 @@ class Montblanc:
                 "places": item["s"],
                 "closed": item["f"] == 1,
                 "retrieved": datetime.now(),
+                "bookable": True,
             }
 
         return self.availability[date]
 
-    def get_availability(self, date: datetime, refuge_id: int) -> dict:
+    def get_availability(self, date: datetime, refuge: Refuge) -> dict:
         """Get the availability of a refuge on a given date.
 
         This method will return the cached availability if it is available and not stale.
 
         Args:
             date (datetime): The date to query
-            refuge_id (int): The ID of the refuge to query
+            Refuge (int): The refuge to query
 
         Returns:
             dict: A dictionary containing the number of places available at the refuge on the given date,
@@ -139,6 +138,7 @@ class Montblanc:
                 "retrieved": datetime(2021, 8, 1, 12, 0, 0),
             }
         """
+        # Check if the availability is cached and not stale
         if (
             date in self.availability
             and self.availability[date]["retrieved"]
@@ -147,7 +147,10 @@ class Montblanc:
         ):
             return self.availability[date]
 
-        return self._query_status(date, refuge_id)
+        if refuge.special:
+            return refuge.check_availability()
+
+        return self._query_status(date, refuge_id=refuge.id)
 
     @ttl_cache(maxsize=1, ttl=times.ONE_DAY)  # 1 day
     def get_regions(self) -> list[dict[str, str]]:
@@ -165,21 +168,28 @@ class Montblanc:
         return response
 
     def alert_on_availability(
-        self, date: datetime, refuge: Refuge, min_places: int = 3, noise: bool = True
+        self, date: datetime, refuge: Refuge, min_places: int = 3, silent: bool = False
     ) -> bool:
         """Print an alert if there are more than `min_places` places available at `refuge_id` on `date`"""
-        availability = self.get_availability(date, refuge.id)
+        availability = self.get_availability(date, refuge)
         if availability["closed"]:
             print(f"Refuge {refuge.name} is closed on {date.strftime(r'%A, %b %d, %Y')}")
             return False
 
-        if availability["places"] > min_places:
+        if not availability["bookable"]:
+            print(f"Refuge {refuge.name} is not yet bookable.")
+            return False
+
+        if availability["places"] and availability["places"] > min_places:
             print(
                 f"!!! Refuge {refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')} !!!"
             )
-            if noise:
+            if not silent:
                 self._make_noise()
             return True
+
+        if availability["places"] is None and availability["bookable"] is True:
+            print(f"!!! Refuge {refuge.name} can't be checked, but it looks like booking is open! !!!")
 
         print(f"{refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')}")
         return False
@@ -223,8 +233,23 @@ class Montblanc:
             logger.debug(f"Refuge {name} ID is {_id}")
             refuges.append(Refuge(id=_id, name=name))
 
+        refuges.extend(self.get_special_refuges())
+
         logger.info(f"Found {len(refuges)} refuges")
         refuges.sort(key=lambda x: x.name)
+        return refuges
+
+    def get_special_refuges(self) -> list[Refuge]:
+        """Get the names and IDs of all special refuges (not on montourdumontblanc.com).
+
+        This is cached for 1 day.
+
+        Returns:
+            list[Refuge]: A list of refuges
+        """
+        refuges = [
+            du_lac_blanc.refuge(),
+        ]
         return refuges
 
     def refuge_by_name(self, refuge_name: str) -> Refuge:
@@ -270,7 +295,12 @@ class Montblanc:
 mb = Montblanc()
 
 
-def check_refuges(refuges: list[int | str | Refuge], date: datetime, min_places: int = 3):
+def check_refuges(
+    refuges: list[int | str | Refuge],
+    date: datetime,
+    min_places: int = 3,
+    silent: bool = False,
+):
     """Check the availability of a list of refuges on a given date.
 
     The function will print an alert if there are more than `min_places` places available at any of the
@@ -280,6 +310,7 @@ def check_refuges(refuges: list[int | str | Refuge], date: datetime, min_places:
         refuges (list[int | str | Refuge]): A list of refuge IDs or names to check
         date (datetime): The date to check
         min_places (int, optional): The minimum number of places available to trigger an alert. Defaults to 3.
+        silent (bool, optional): If True, no noise will be made when availability is found. Defaults to False.
     """
 
     # Find the refuge objects corresponding to the given refuges
@@ -293,7 +324,7 @@ def check_refuges(refuges: list[int | str | Refuge], date: datetime, min_places:
 
         # Check the availability of each refuge
         for refuge in ref_objs:
-            mb.alert_on_availability(date, refuge, min_places)
+            mb.alert_on_availability(date, refuge, min_places, silent=silent)
 
         # Wait for the refresh timeout
         sleep_with_waiting_bar()
@@ -316,7 +347,7 @@ def convert_refuge(refuge: int | str | dict | Refuge):
         return mb.refuge_by_name(refuge)
 
 
-def check_region(region: str, date: datetime, min_places: int = 3):
+def check_region(region: str, date: datetime, min_places: int = 3, silent: bool = False):
     """Check the availability of all of refuges in a given region on a given date.
 
     The function will print an alert if there are more than `min_places` places available at any of the
@@ -326,6 +357,7 @@ def check_region(region: str, date: datetime, min_places: int = 3):
         region (str): A region to check
         date (datetime): The date to check
         min_places (int, optional): The minimum number of places available to trigger an alert. Defaults to 3.
+        silent (bool, optional): If True, no noise will be made when availability is found. Defaults to False.
     """
 
     while True:
@@ -336,7 +368,7 @@ def check_region(region: str, date: datetime, min_places: int = 3):
         for refuge in mb.get_regions():
             if region in refuge["Nom"]:
                 for refuge_id in refuge["Id"]:
-                    mb.alert_on_availability(date, mb.refuge_by_id(refuge_id), min_places)
+                    mb.alert_on_availability(date, mb.refuge_by_id(refuge_id), min_places, silent=silent)
 
         # Wait for the refresh timeout
         sleep_with_waiting_bar()
@@ -378,24 +410,32 @@ class Plan:
 
         self.load(path)
 
-    def check(self, min_places: int = 3):
+    def check(self, min_places: int = 3, silent: bool = False):
         """Check the availability of the refuges in the plan."""
         if not self.days:
             raise ValueError("No days have been added to the plan. Use `add_day` to add days to the plan.")
 
         while True:
+            # Clear the terminal
+            os.system("cls||clear")
+
             places_found = False
             for day, refuges in self.days.items():
                 for refuge in refuges:
-                    if mb.alert_on_availability(day, refuge, min_places, noise=False):
+                    if mb.alert_on_availability(day, refuge, min_places, silent=True):
                         places_found = True
 
-            if places_found:
+            if places_found and not silent:
                 mb._make_noise()
 
             sleep_with_waiting_bar()
 
-    def add_day(self, date: datetime, refuges: list[int | str | Refuge], print_refuges: bool = False):
+    def add_day(
+        self,
+        date: datetime,
+        refuges: list[int | str | Refuge],
+        print_refuges: bool = False,
+    ):
         """Add a day to the plan. If the day already exists, the refuges will replace the existing day.
 
         Args:
@@ -410,7 +450,7 @@ class Plan:
             return
 
         c_refuges = [convert_refuge(refuge) for refuge in refuges]
-        self.days[date] = set(c_refuges)
+        self.days[date] = set(sorted(c_refuges, key=lambda x: x.name))
         self.days = dict(sorted(self.days.items()))
 
         if print_refuges:
@@ -426,7 +466,7 @@ class Plan:
             "days": [
                 {
                     "date": day.strftime(r"%Y-%m-%d"),
-                    "refuges": [r.model_dump() for r in refuges],
+                    "refuges": [r.model_dump() for r in sorted(refuges, key=lambda x: x.name)],
                 }
                 for day, refuges in self.days.items()
             ]
@@ -450,66 +490,52 @@ class Plan:
             payload = json.load(f)
 
         for day in payload["days"]:
-            refuges = [Refuge.model_validate(refuge) for refuge in day["refuges"]]
+            refuges = []
+            for cached_refuge in day["refuges"]:
+                for refuge in mb.get_refuge_names():
+                    if refuge.id == cached_refuge["id"] or refuge.name == cached_refuge["name"]:
+                        refuges.append(refuge)
+                        break
+
             self.add_day(datetime.strptime(day["date"], r"%Y-%m-%d"), refuges)
 
 
 planner = typer.Typer()
 
-plan_path = Annotated[
-    str,
-    typer.Option(
-        "--path",
-        "-p",
-        help=(
-            "The filepath of the plan. Provide a full path eith a filename, including the "
-            ".json file extension. If omitted, a default plan will be used. "
-            "Any directories in the path will be created if they do not exist."
-            "\n\n[default: ~/.montblanc/default_plan.json]"
-        ),
-        show_default=False,
-    ),
-]
-
 
 @planner.command()
 def check(
-    path: plan_path = None,
-    min_places: Annotated[
-        int, typer.Option("-m", "--min-places", help="The minimum number of places to alert on.")
-    ] = 3,
+    path: types.plan_path_arg = None,
+    min_places: types.min_places_arg = 3,
+    silent: types.silent_arg = False,
 ):
-    Plan(path).check(min_places)
+    Plan(path).check(min_places, silent=silent)
 
 
-@planner.command(help="Add a day to the plan. A day can have zero or more refuges to check.")
+@planner.command(
+    help=(
+        "Add a day to the plan. A day can have zero or more refuges to check."
+        "\n\nExample: "
+        '\n\n>> montblanc plan day 2024-09-11 32367 "de la Nova"'
+    )
+)
 def day(
     date: Annotated[
         datetime,
-        typer.Argument(formats=["%Y-%m-%d", "%d/%m/%Y", "%Y.%m.%d"], help="The date.", show_default=False),
-    ],
-    refuges: Annotated[
-        List[str],
         typer.Argument(
-            help=(
-                "The refuges to check. Refuges can be given as names or IDs. "
-                "If a refuge is given by name, you can give a partial name and the script will try to "
-                "find a match. To get a list of all refuges and their IDs, run [montblanc show]. "
-                "If this day already exists in the plan, the refuges will replace the existing refuges."
-                "\n\nSupplying zero refuges is allowed, and can be used to clear a day. "
-                "\n\nExample: "
-                '\n\n>> montblanc plan day 2024-09-11 32367 "de la Nova"'
-            ),
-            show_default=True,
+            formats=["%Y-%m-%d", "%d/%m/%Y", "%Y.%m.%d"],
+            help="The date.",
+            show_default=False,
         ),
-    ] = None,
-    path: plan_path = None,
+    ],
+    refuges: types.refuges_arg = None,
+    path: types.plan_path_arg = None,
 ):
     Plan(path).add_day(date, refuges, print_refuges=True)
 
 
 @planner.command()
-def show(path: plan_path = None):
+def show(path: types.plan_path_arg = None):
     plan = Plan(path)
     for day, refuges in plan.days.items():
         print(f"{day.strftime(r'%A, %b %d, %Y')}:")
@@ -532,8 +558,9 @@ def show():
 @app.command()
 def check(
     date: Annotated[datetime, typer.Argument(formats=["%Y-%m-%d", "%d/%m/%Y", "%Y.%m.%d"])],
-    refuges: Annotated[List[str], typer.Argument()],
-    min_places: int = 3,
+    refuges: types.refuges_arg,
+    min_places: types.min_places_arg = 3,
+    silent: types.silent_arg = False,
 ):
     check_refuges(refuges=refuges, date=date, min_places=min_places)
 
