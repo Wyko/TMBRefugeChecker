@@ -175,6 +175,7 @@ class Montblanc:
             print(f"    {refuge.name.rjust(m_len)}: Closed on {date.strftime(r'%A, %b %d, %Y')}")
             return False
 
+        if not availability["bookable"]:
             print(f"    {refuge.name.rjust(m_len)}: Booking system not available yet.")
             return False
 
