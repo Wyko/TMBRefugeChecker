@@ -170,26 +170,28 @@ class Montblanc:
     ) -> bool:
         """Print an alert if there are more than `min_places` places available at `refuge_id` on `date`"""
         availability = self.get_availability(date, refuge)
+        m_len = max([len(r.name) for r in self.get_refuge_names()])
         if availability["closed"]:
-            print(f"Refuge {refuge.name} is closed on {date.strftime(r'%A, %b %d, %Y')}")
+            print(f"    {refuge.name.rjust(m_len)}: Closed on {date.strftime(r'%A, %b %d, %Y')}")
             return False
 
-        if not availability["bookable"]:
-            print(f"Refuge {refuge.name} is not yet bookable.")
+            print(f"    {refuge.name.rjust(m_len)}: Booking system not available yet.")
             return False
 
         if availability["places"] and availability["places"] > min_places:
             print(
-                f"!!! Refuge {refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')} !!!"
+                f"!!! {refuge.name.rjust(m_len)}: {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')} !!!"
             )
             if not silent:
                 self._make_noise()
             return True
 
         if availability["places"] is None and availability["bookable"] is True:
-            print(f"!!! Refuge {refuge.name} can't be checked, but it looks like booking is open! !!!")
+            print(
+                f"!!! {refuge.name.rjust(m_len)}: Check not possible, but it looks like booking is open! !!!"
+            )
 
-        print(f"{refuge.name} has {availability['places']} places left on {date.strftime(r'%A, %b %d, %Y')}")
+        print(f"    {refuge.name.rjust(m_len)}: Not available on {date.strftime(r'%A, %b %d, %Y')}")
         return False
 
     def _make_noise(self):
