@@ -382,6 +382,7 @@ def sleep_with_waiting_bar(timeout: int = mb.REFRESH_TIMEOUT):
         timeout (int, optional): The number of seconds to wait. Defaults to mb.REFRESH_TIMEOUT.
     """
 
+    print("")
     for _ in tqdm(
         range(mb.REFRESH_TIMEOUT * 2),
         leave=False,

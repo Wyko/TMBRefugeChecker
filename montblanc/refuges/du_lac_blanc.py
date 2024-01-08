@@ -37,11 +37,14 @@ class LacBlanc(Refuge):
         """Check if booking is open for Lac Blanc refuge."""
 
         # Get the booking page
-        r = httpx.get("https://refuge-lac-blanc.fr/en/booking/")
-        r.raise_for_status()
-
-        # Check if the booking is open
-        return "Reservations are not possible at this time" not in r.text
+        try:
+            r = httpx.get("https://refuge-lac-blanc.fr/en/booking/")
+            r.raise_for_status()
+            # Check if the booking is open
+            return "Reservations are not possible at this time" not in r.text
+        except httpx.HTTPError:
+            print("### Error while checking if booking is open for Lac Blanc refuge")
+            return False
 
 
 refuge = LacBlanc
