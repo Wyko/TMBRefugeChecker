@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "montblanc"
-version = "0.3.0"
+version = "0.4.0"
 description = ""
 authors = ["Wyko ter Haar <wyko.ter.haar@gmail.com>"]
 readme = "README.md"
