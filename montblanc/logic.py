@@ -169,8 +169,18 @@ class Montblanc:
         self, date: datetime, refuge: Refuge, min_places: int = 3, silent: bool = False
     ) -> bool:
         """Print an alert if there are more than `min_places` places available at `refuge_id` on `date`"""
-        availability = self.get_availability(date, refuge)
+        try:
+            availability = self.get_availability(date, refuge)
+        except Exception:
+            print(f"### Error while checking {refuge.name}")
+            return False
+
         m_len = max([len(r.name) for r in self.get_refuge_names()])
+
+        if not availability:
+            print(f"    {refuge.name.rjust(m_len)}: No availability information available. Try again later.")
+            return False
+
         if availability["closed"]:
             print(f"    {refuge.name.rjust(m_len)}: Closed on {date.strftime(r'%A, %b %d, %Y')}")
             return False
