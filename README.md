@@ -1,4 +1,4 @@
-# TMBRefugeChecker
+# Tour du Mont Blanc Refuge Checker
 
 Checks the refuges listed on montourdumontblanc.com (and one or two others) for availability. I wrote this because checking for the availability of a hut on the TMB was the next best thing to impossible after November, and so I was left looking for cancellations. I hope this helps you guys too!
 
