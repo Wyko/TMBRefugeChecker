@@ -1,6 +1,6 @@
 # Tour du Mont Blanc Refuge Checker
 
-Checks the refuges listed on (montourdumontblanc.com)[montourdumontblanc.com] (and one or two others) for availability. I wrote this because checking for the availability of a hut on the TMB was the next best thing to impossible after November, and so I was left looking for cancellations. I hope this helps you guys too!
+Checks the refuges listed on [montourdumontblanc.com](montourdumontblanc.com) (and one or two others) for availability. I wrote this because checking for the availability of a hut on the TMB was the next best thing to impossible after November, and so I was left looking for cancellations. I hope this helps you guys too!
 
 ~~And yes, I'm still actively using this right now. So if you could, please stay away from **de la Nova** and **Les Chambres du Soleil** on July 11... :smile:~~
 Edit: I got the reservation! Whoo!
