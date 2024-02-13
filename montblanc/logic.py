@@ -24,6 +24,7 @@ import re
 import time
 import winsound
 from collections import defaultdict
+from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
@@ -32,6 +33,7 @@ import httpx
 import times
 from bs4 import BeautifulSoup
 from cachetools.func import ttl_cache
+from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from montblanc.refuges import (
@@ -402,8 +404,32 @@ def sleep_with_waiting_bar(timeout: int = mb.REFRESH_TIMEOUT):
         time.sleep(0.5)
 
 
+class Settings(BaseModel):
+    recent_plans: list[str] = Field(default_factory=list)
+    default_plan: str = Path.home() / ".montblanc" / "default_plan.json"
+
+    def save(self):
+        """Save the settings for the Montblanc app."""
+        path = Path.home() / ".montblanc" / "settings.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w") as f:
+            json.dump(self.model_dump_json(), f, indent=4)
+
+    @classmethod
+    def load(cls) -> "Settings":
+        """Load the settings for the Montblanc app."""
+        path = Path.home() / ".montblanc" / "settings.json"
+        if not path.exists():
+            return cls()
+
+        with path.open("r") as f:
+            payload = json.load(f)
+
+        return cls.model_validate_json(payload)
+
+
 class Plan:
-    def __init__(self, path: str = None):
+    def __init__(self, path: str = None, name: str = "New TMB Plan"):
         if path:
             if not path.endswith(".json"):
                 raise ValueError(
@@ -419,8 +445,15 @@ class Plan:
 
         self.days: dict[datetime, set[Refuge]] = defaultdict(set)
         self.path: Path = path
+        self.name: str = name
 
         self.load(path)
+
+    def __repr__(self):
+        return f"{self.name}"
+
+    def __str__(self):
+        return f"{self.name}"
 
     def check(self, min_places: int = 3, silent: bool = False):
         """Check the availability of the refuges in the plan."""
@@ -510,3 +543,12 @@ class Plan:
                         break
 
             self.add_day(datetime.strptime(day["date"], r"%Y-%m-%d"), refuges)
+
+
+def load_recent_plans(plans: list) -> list[Plan]:
+    """Load all plans from the default location."""
+    for plan in plans:
+        with suppress(Exception):
+            plans.append(Plan(plan))
+
+    return plans
