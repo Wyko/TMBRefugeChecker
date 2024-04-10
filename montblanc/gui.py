@@ -3,12 +3,16 @@ from contextlib import suppress
 from typing import Literal, Tuple
 
 import customtkinter
+from tkcalendar import DateEntry
 
 from montblanc import logic
 from montblanc.logic import Settings
 
 customtkinter.set_appearance_mode("System")  # Modes: system (default), light, dark
 customtkinter.set_default_color_theme("blue")  # Themes: blue (default), dark-blue, green
+
+mb = logic.Montblanc()
+"""The reusable logic object for the Montblanc Refuge Monitor."""
 
 
 class MainApplication(customtkinter.CTk):
@@ -89,7 +93,9 @@ class CreatePlan(customtkinter.CTkFrame):
         lbl_picker = customtkinter.CTkLabel(self.frm_picker, text="Select Existing Plan")
         lbl_picker.grid(row=row, column=0, padx=5)
 
-        btn_create_new = customtkinter.CTkButton(self.frm_picker, text="New Plan", command=self.create_plan)
+        btn_create_new = customtkinter.CTkButton(
+            self.frm_picker, text="New Plan", command=self.create_plan, fg_color="grey"
+        )
         btn_create_new.grid(row=row, column=1, padx=5, pady=5)
 
         btn_del_plan = customtkinter.CTkButton(
@@ -101,14 +107,20 @@ class CreatePlan(customtkinter.CTkFrame):
         self.frm_plan = customtkinter.CTkFrame(self)
         self.frm_plan.pack(side=tk.BOTTOM, fill="both", expand=True, padx=5, pady=(2, 5))
 
-        self.ent_plan_name = customtkinter.CTkEntry(self.frm_plan, placeholder_text="Plan Name")
-        self.ent_plan_name.pack(pady=(10, 5), padx=5, anchor="nw", side="top", fill="x", expand=False)
+        self.frm_name_save = customtkinter.CTkFrame(self.frm_plan, fg_color="transparent")
+        self.frm_name_save.pack(side=tk.TOP, fill="x", expand=False, anchor="w", padx=0, pady=(5, 0))
+
+        self.ent_plan_name = customtkinter.CTkEntry(self.frm_name_save, placeholder_text="Plan Name")
+        self.ent_plan_name.pack(pady=5, padx=5, anchor="center", side="left", fill="x", expand=True)
+
+        self.btn_save_plan = customtkinter.CTkButton(self.frm_name_save, text="Save Plan")
+        self.btn_save_plan.pack(pady=5, padx=5, anchor="center", side="right")
 
         self.scr_refuges = customtkinter.CTkScrollableFrame(self.frm_plan)
-        self.scr_refuges.pack(pady=5, padx=5, anchor="s", side="bottom", fill="both", expand=True)
+        self.scr_refuges.pack(pady=5, padx=5, anchor="w", side="bottom", fill="both", expand=True)
 
         frm_rfg1 = RefugeFrame(self.scr_refuges, "Refuge 1")
-        frm_rfg1.pack(pady=5, padx=5, anchor="w", side="top", fill="x", expand=False)
+        frm_rfg1.pack(pady=(0, 5), padx=5, anchor="w", side="top", fill="x", expand=False)
 
     def create_plan(self):
         pass
@@ -130,23 +142,33 @@ class RefugeFrame(customtkinter.CTkFrame):
     def __init__(self, parent, name: str, **kwargs):
         super().__init__(parent, **kwargs)
         self.name = name
+        self.get_refuges()
         self.create_widgets()
 
+    def get_refuges(self):
+        results = mb.get_refuge_names()
+        self.refuges = [r.name for r in results]
+
     def create_widgets(self):
-        lbl_name = customtkinter.CTkLabel(self, text=self.name)
-        lbl_name.pack(pady=5, padx=5, anchor="w", side="top", fill="x", expand=False)
+        self.ent_date = DateEntry(self, width=12, background="darkblue", foreground="white", borderwidth=2)
+        self.ent_date.pack(pady=5, padx=5, anchor="w", side="left", fill="x", expand=False)
 
-        self.ent_date = customtkinter.CTkEntry(self, placeholder_text="Date")
-        self.ent_date.pack(pady=5, padx=5, anchor="w", side="top", fill="x", expand=False)
+        self.refuge = customtkinter.CTkComboBox(self, values=self.refuges)
+        self.refuge.pack(pady=5, padx=5, anchor="w", side="left", fill="x", expand=True)
 
-        self.ent_capacity = customtkinter.CTkEntry(self, placeholder_text="People Capacity Needed")
-        self.ent_capacity.pack(pady=5, padx=5, anchor="w", side="top", fill="x", expand=False)
+        self.spaces = tk.StringVar()
+        self.ent_spaces = customtkinter.CTkEntry(
+            self, placeholder_text="Spaces Needed", textvariable=self.spaces, width=60
+        )
+        self.ent_spaces.pack(pady=5, padx=5, anchor="w", side="left", fill="x", expand=False)
+        self.spaces.trace_add("write", self.validate_spaces)
+        self.ent_spaces_border = self.ent_spaces.cget("border_color")
 
-        self.ent_status = customtkinter.CTkEntry(self, placeholder_text="Status")
-        self.ent_status.pack(pady=5, padx=5, anchor="w", side="top", fill="x", expand=False)
-
-        self.ent_note = customtkinter.CTkEntry(self, placeholder_text="Note")
-        self.ent_note.pack(pady=5, padx=5, anchor="w", side="top", fill="x", expand=False)
+    def validate_spaces(self, *args):
+        if not self.ent_spaces.get().isdigit():
+            self.ent_spaces.configure(border_color="red")
+        else:
+            self.ent_spaces.configure(border_color=self.ent_spaces_border)
 
 
 class WarningDialog(customtkinter.CTkToplevel):
