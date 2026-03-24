@@ -1,0 +1,15 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:poetry",
+    "python-envs.defaultPackageManager": "ms-python.python:poetry",
+    "chat.tools.terminal.autoApprove": {
+        "/^& C:\\\\Users\\\\vegas\\\\AppData\\\\Local\\\\pypoetry\\\\Cache\\\\virtualenvs\\\\montblanc-8WcvCK3u-py3\\.14\\\\Scripts\\\\python\\.exe -m pytest tests/ -v 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

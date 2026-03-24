@@ -2,6 +2,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "MB: Web",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "montblanc/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "web",
+            ]
+        },
+        {
             "name": "MB: Check",
             "type": "python",
             "request": "launch",
@@ -9,7 +19,7 @@
             "console": "integratedTerminal",
             "args": [
                 "check",
-                "2024.07.11",
+                "2026.07.11",
                 "solei",
                 "nova"
             ]
@@ -23,7 +33,7 @@
             "args": [
                 "plan",
                 "day",
-                "2024.07.11",
+                "2026.07.11",
                 "solei",
                 "nova"
             ]
