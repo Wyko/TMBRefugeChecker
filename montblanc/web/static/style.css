@@ -35,6 +35,18 @@ select, input[type="date"], input[type="number"] {
     font-size: .9rem;
 }
 input[type="number"] { width: 5rem; }
+.range-with-value {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+.range-with-value input[type="range"] { width: 7rem; }
+.range-with-value span {
+    font-size: .85rem;
+    font-weight: 600;
+    min-width: 1.5rem;
+    text-align: center;
+}
 
 /* ===== Loading indicator ===== */
 .loading {
@@ -94,6 +106,17 @@ button {
 section { background: #fff; border-radius: 6px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow-y: auto; min-height: 0; }
 section h2 { font-size: 1rem; margin-bottom: .6rem; color: #1e3a5f; }
 .hint { font-size: .78rem; color: #888; margin-bottom: .6rem; }
+.cluster-hint {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #93c5fd;
+    border-radius: 3px;
+    font-size: .68rem;
+    padding: 0 .3rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
 
 /* ===== Refuge filter ===== */
 #refuge-filter {

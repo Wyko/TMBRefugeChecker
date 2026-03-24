@@ -34,6 +34,13 @@
             <label for="daily-km">Daily Distance (km)</label>
             <input type="number" id="daily-km" value="15" min="1" max="100" step="1">
         </div>
+        <div class="control-group">
+            <label for="cluster-radius">Grouping Radius (km)</label>
+            <div class="range-with-value">
+                <input type="range" id="cluster-radius" value="7" min="0" max="25" step="1">
+                <span id="cluster-radius-value">7</span>
+            </div>
+        </div>
         <button id="check-btn" disabled>Check Availability</button>
         <button id="save-btn" title="Save current night selections">Save</button>
         <button id="load-btn" title="Load saved night selections">Load</button>
@@ -43,7 +50,7 @@
     <div id="main">
         <section id="refuge-panel">
             <h2>Refuges <span id="refuge-count"></span></h2>
-            <p class="hint">Drag refuges into groups on the right</p>
+            <p class="hint">Drag refuges into groups on the right. Use the <strong class="cluster-hint">+N</strong> button to drag nearby refuges together.</p>
             <input type="text" id="refuge-filter" placeholder="Filter refuges…">
             <div id="refuge-list"></div>
         </section>

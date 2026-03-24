@@ -4,7 +4,7 @@
 let allRefuges = [];      // [{id, name, order, km_from_start}, ...]
 let groups = [];           // [[{id, name}, ...], ...]
 let draggedRefugeIds = []; // IDs being dragged (single or cluster)
-const CLUSTER_RADIUS_KM = 7;
+let clusterRadiusKm = 7;   // adjustable grouping radius
 
 // ── DOM refs ───────────────────────────────────────────
 const refugeList   = document.getElementById("refuge-list");
@@ -36,6 +36,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshBtn.addEventListener("click", onRefresh);
     dailyKmEl.addEventListener("input", renderRefuges);
     document.getElementById("refuge-filter").addEventListener("input", renderRefuges);
+    const clusterSlider = document.getElementById("cluster-radius");
+    const clusterValue  = document.getElementById("cluster-radius-value");
+    clusterSlider.addEventListener("input", () => {
+        clusterRadiusKm = parseInt(clusterSlider.value, 10);
+        clusterValue.textContent = clusterRadiusKm;
+        renderRefuges();
+    });
 
     refugeList.innerHTML = '<div class="loading">Loading refuges…</div>';
     try {
@@ -87,12 +94,12 @@ function usedRefugeIds() {
     return ids;
 }
 
-/** Find refuges within CLUSTER_RADIUS_KM of the given refuge. */
+/** Find refuges within the current grouping radius of the given refuge. */
 function clusterAround(refuge, available) {
-    if (refuge.km_from_start == null) return [refuge];
+    if (refuge.km_from_start == null || clusterRadiusKm <= 0) return [refuge];
     return available.filter(r =>
         r.km_from_start != null &&
-        Math.abs(r.km_from_start - refuge.km_from_start) <= CLUSTER_RADIUS_KM
+        Math.abs(r.km_from_start - refuge.km_from_start) <= clusterRadiusKm
     );
 }
 
@@ -127,7 +134,7 @@ function suggestedNextIds() {
     }
     // Include all refuges within CLUSTER_RADIUS_KM of the best match
     const bestRefuges = available.filter(r =>
-        Math.abs(r.km_from_start - targetKm) <= bestDist + CLUSTER_RADIUS_KM
+        Math.abs(r.km_from_start - targetKm) <= bestDist + clusterRadiusKm
     );
     return new Set(bestRefuges.map(r => r.id));
 }
@@ -192,7 +199,7 @@ function renderRefuges() {
             if (cluster.length > 1) {
                 const clusterBtn = document.createElement("button");
                 clusterBtn.className = "cluster-btn";
-                clusterBtn.title = `Drag ${cluster.length} nearby refuges (within ${CLUSTER_RADIUS_KM} km)`;
+                clusterBtn.title = `Drag all ${cluster.length} nearby refuges as a group (within ${clusterRadiusKm} km of each other)`;
                 clusterBtn.textContent = `+${cluster.length - 1}`;
                 clusterBtn.draggable = true;
                 clusterBtn.addEventListener("dragstart", (e) => {
@@ -520,6 +527,7 @@ async function onSave() {
         endDate: endDateEl.value,
         minPlaces: minPlacesEl.value,
         dailyKm: dailyKmEl.value,
+        clusterRadius: clusterRadiusKm,
     };
     try {
         const res = await fetch("/api/selections/save", {
@@ -553,6 +561,11 @@ async function onLoad() {
             if (s.endDate) endDateEl.value = s.endDate;
             if (s.minPlaces) minPlacesEl.value = s.minPlaces;
             if (s.dailyKm) dailyKmEl.value = s.dailyKm;
+            if (s.clusterRadius != null) {
+                clusterRadiusKm = s.clusterRadius;
+                document.getElementById("cluster-radius").value = clusterRadiusKm;
+                document.getElementById("cluster-radius-value").textContent = clusterRadiusKm;
+            }
         }
         renderGroups();
         renderRefuges();

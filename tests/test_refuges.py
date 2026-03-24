@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from montblanc.refuges import Refuge, SpecialRefuge, clear_special_registry, get_special_refuges
 from montblanc.scraper import DayAvailability
-from montblanc.trail_data import TMB_KM_FROM_START
+from montblanc.trail_data import TMB_KM_FROM_START, get_km_from_start
 
 
 class TestRefugeModel:
@@ -89,6 +89,35 @@ class TestTrailData:
         distances = list(TMB_KM_FROM_START.values())
         assert max(distances) >= 150, "Route should span at least 150 km"
         assert min(distances) < 5, "First refuge should be near the start"
+
+
+class TestFuzzyMatching:
+    """Tests for fuzzy refuge name matching via get_km_from_start."""
+
+    def test_exact_match(self):
+        assert get_km_from_start("Refuge de Nant Borrant") == 20.0
+
+    def test_accent_variation(self):
+        """A wrong accent (ê vs î) should still match."""
+        assert get_km_from_start("Auberge Gête Bon Abri") == 115.0
+
+    def test_case_insensitive(self):
+        assert get_km_from_start("refuge de nant borrant") == 20.0
+
+    def test_accent_stripped_match(self):
+        """Fully stripped accents should still match."""
+        assert get_km_from_start("Refuge de la Balme") == 22.0
+        assert get_km_from_start("Hotel du Col de Fenetre") == 97.0
+
+    def test_close_misspelling(self):
+        """A minor misspelling should match via difflib."""
+        assert get_km_from_start("Rifugio G. Berton") == 70.0
+
+    def test_no_match_for_unrelated_name(self):
+        assert get_km_from_start("Hotel Splendid Paris") is None
+
+    def test_no_match_for_empty_string(self):
+        assert get_km_from_start("") is None
 
 
 class TestSpecialRefuge:

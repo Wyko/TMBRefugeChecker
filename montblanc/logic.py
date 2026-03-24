@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 from montblanc.refuges import Refuge, SpecialRefuge, get_special_refuges
 from montblanc.scraper import DayAvailability, RefugeAvailability, scrape_planning
-from montblanc.trail_data import TMB_KM_FROM_START
+from montblanc.trail_data import get_km_from_start
 
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -111,11 +111,14 @@ def _build_availability_index(
 def _apply_trail_distances(refuges: list[Refuge]) -> None:
     """Set ``km_from_start`` on each refuge using the trail-distance lookup.
 
+    Uses fuzzy matching to handle minor name variations (accents,
+    spelling differences) between the scraper and the distance table.
+
     Args:
         refuges (list[Refuge]): The refuges to update in-place.
     """
     for r in refuges:
-        km = TMB_KM_FROM_START.get(r.name)
+        km = get_km_from_start(r.name)
         if km is not None:
             r.km_from_start = km
 
