@@ -4,6 +4,8 @@ Check refuge (mountain hut) availability along the **Tour du Mont Blanc** hiking
 
 Covers **43 refuges** across the full TMB circuit — from Les Houches through Courmayeur, the Swiss Val Ferret, Champex, and back via Chamonix — including special refuges like **Refuge du Lac Blanc** and **Rifugio Elena** that aren't on montourdumontblanc.com.
 
+![image](image.png)
+
 ## Features
 
 - **Web itinerary planner** — drag-and-drop refuges into nightly groups, set a date range, and instantly see which start dates have availability across your entire trip
