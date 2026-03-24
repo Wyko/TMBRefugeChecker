@@ -1,8 +1,6 @@
 # Tour du Mont Blanc Refuge Checker
 
-Check refuge (mountain hut) availability along the **Tour du Mont Blanc** hiking route (~170 km). The app scrapes availability data from [montourdumontblanc.com](https://www.montourdumontblanc.com) and independent booking systems, then presents it through a CLI and a web-based itinerary planner.
-
-Covers **43 refuges** across the full TMB circuit — from Les Houches through Courmayeur, the Swiss Val Ferret, Champex, and back via Chamonix — including special refuges like **Refuge du Lac Blanc** and **Rifugio Elena** that aren't on montourdumontblanc.com.
+Check refuge (mountain hut) availability along the **Tour du Mont Blanc** hiking route. The app scrapes availability data from [montourdumontblanc.com](https://www.montourdumontblanc.com) and independent booking systems, then presents it through a CLI and a web-based itinerary planner.
 
 ![image](image.png)
 
