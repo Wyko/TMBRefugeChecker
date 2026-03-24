@@ -30,6 +30,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     setDefaultDates();
     datePreset.addEventListener("change", onPresetChange);
     addGroupBtn.addEventListener("click", () => { addGroup(); updateCheckBtn(); });
+
+    // Allow dropping refuges onto the "Add Night" button
+    addGroupBtn.addEventListener("dragover", (e) => { e.preventDefault(); addGroupBtn.classList.add("drag-over"); });
+    addGroupBtn.addEventListener("dragleave", () => addGroupBtn.classList.remove("drag-over"));
+    addGroupBtn.addEventListener("drop", (e) => {
+        e.preventDefault();
+        addGroupBtn.classList.remove("drag-over");
+        if (draggedRefugeIds.length > 0) {
+            addGroupWithRefuges(draggedRefugeIds);
+        }
+    });
+
+    // Allow dropping refuges onto empty area of the groups panel
+    groupsEl.addEventListener("dragover", (e) => { e.preventDefault(); });
+    groupsEl.addEventListener("drop", (e) => {
+        // Only handle drops on the panel itself, not on a group box
+        if (e.target === groupsEl && draggedRefugeIds.length > 0) {
+            e.preventDefault();
+            addGroupWithRefuges(draggedRefugeIds);
+        }
+    });
     checkBtn.addEventListener("click", onCheck);
     saveBtn.addEventListener("click", onSave);
     loadBtn.addEventListener("click", onLoad);
@@ -244,6 +265,12 @@ function renderRefuges() {
 function addGroup() {
     groups.push([]);
     renderGroups();
+}
+
+function addGroupWithRefuges(refugeIds) {
+    groups.push([]);
+    const newIdx = groups.length - 1;
+    addMultipleRefugesToGroup(newIdx, refugeIds);
 }
 
 function removeGroup(idx) {

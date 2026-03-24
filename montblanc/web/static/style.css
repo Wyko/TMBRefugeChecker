@@ -92,6 +92,11 @@ button {
     width: 100%;
 }
 #add-group-btn:hover { background: #d1d5db; }
+#add-group-btn.drag-over {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #2563eb;
+}
 
 /* ===== Main layout ===== */
 #main {
