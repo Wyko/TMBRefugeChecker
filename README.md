@@ -1,76 +1,136 @@
 # Tour du Mont Blanc Refuge Checker
 
-Checks the refuges listed on [montourdumontblanc.com](montourdumontblanc.com) for availability. I wrote this because checking for the availability of a hut on the TMB was the next best thing to impossible after November, and so I was left looking for cancellations. I hope this helps you guys too!
+Check refuge (mountain hut) availability along the **Tour du Mont Blanc** hiking route (~170 km). The app scrapes availability data from [montourdumontblanc.com](https://www.montourdumontblanc.com) and independent booking systems, then presents it through a CLI and a web-based itinerary planner.
 
-~~And yes, I'm still actively using this right now. So if you could, please stay away from **de la Nova** and **Les Chambres du Soleil** on July 11... :smile:~~
-Edit: I got the reservation! Whoo!
+Covers **43 refuges** across the full TMB circuit — from Les Houches through Courmayeur, the Swiss Val Ferret, Champex, and back via Chamonix — including special refuges like **Refuge du Lac Blanc** and **Rifugio Elena** that aren't on montourdumontblanc.com.
 
-Please star the repo and start a post in Discussions if this helped you!
+## Features
 
-# Prerequisites
+- **Web itinerary planner** — drag-and-drop refuges into nightly groups, set a date range, and instantly see which start dates have availability across your entire trip
+- **CLI availability checker** — check specific dates and refuges from the terminal with audio alerts when places open up
+- **Trip planner** — save multi-day plans and monitor them for openings
+- **Smart distance awareness** — refuges are ordered by km along the TMB, with daily distance visualization
+- **Automatic caching** — rate-limited and cached so we don't flood the booking sites
 
-- Python 3.11
-- Git
+## Prerequisites
 
-# Installation
+You need **Python 3.11 or newer** and **pip** (Python's package installer).
+
+### Don't have Python?
+
+1. Go to [python.org/downloads](https://www.python.org/downloads/) and download the latest version (3.11+).
+2. Run the installer. **Check the box that says "Add Python to PATH"** — this is important.
+3. Open a new terminal (Command Prompt on Windows, Terminal on Mac/Linux) and verify it works:
+   ```
+   python --version
+   ```
+   You should see something like `Python 3.13.x`. If you get an error, try `python3 --version` instead.
+
+> **Windows note:** If `python` isn't recognized after installing, close and reopen your terminal. If it still doesn't work, you may need to re-run the installer and check "Add Python to PATH."
+
+## Installation
 
 ```bash
 pip install git+https://github.com/Wyko/TMBRefugeChecker.git
 ```
 
-# Usage
-After installing it, just open a terminal (Command Prompt) and type in the appropriate commands. 
-All commands start with `montblanc`, and you can run `montblanc --help` to see guidance on how to use
-it.
+Or if your system uses `python3`:
 ```bash
->> montblanc list
+pip3 install git+https://github.com/Wyko/TMBRefugeChecker.git
+```
 
-Found 40 refuges:
+After installation, the `montblanc` command is available in your terminal.
+
+## Quick Start — Web UI
+
+The easiest way to use the app is through the web interface:
+
+```bash
+montblanc web
+```
+
+This opens a browser at `http://127.0.0.1:8000` with a drag-and-drop itinerary planner where you can:
+
+1. **Drag refuges** from the left panel into nightly groups on the right
+2. **Pick a date range** (presets like "Summer 2026" or custom dates)
+3. **Set min places** — only show dates with at least this many beds available
+4. **Click Check** — the app finds all start dates where every night in your trip has availability
+5. **Save/Load** your selections so you don't have to rebuild your itinerary each time
+
+Options:
+- `--port` — change the port (default: 8000)
+- `--no-browser` — start the server without opening a browser
+
+## CLI Usage
+
+All commands start with `montblanc`. Run `montblanc --help` for full guidance.
+
+### List all refuges
+
+```bash
+montblanc list
+```
+
+Shows every refuge with its ID and name:
+```
+Found 43 refuges:
 32400:   Auberge Gîte Bon Abri
 32406:   Auberge Mont-Blanc
 32394:   Auberge des Glaciers
-32365:   Auberge du Truc
+90001:   Refuge du Lac Blanc
+90002:   Rifugio Elena
 ...
-
->> montblanc check 2024.07.01 32400 Glaciers Abri
-
-!!! Refuge Auberge Gîte Bon Abri has 13 places left on Monday, Jul 01, 2024 !!!
-<Beeping Alert Sounds>
-
->> montblanc check 2024.07.11 nova solei
-
-Auberge-Refuge de la Nova has 0 places left on Thursday, Jul 11, 2024
-Les Chambres du Soleil has 0 places left on Thursday, Jul 11, 2024
-Waiting to check availability: 04:57
 ```
 
-# Planning
-This app can also be used to check a full trip's worth of dates. Doing so is easy:
+### Check availability
+
 ```bash
->> montblanc plan day 2024.07.03 "lac blanc"
-Added Wednesday, Jul 03, 2024:
-  - Refuge du Lac Blanc
-
->> montblanc plan day 2024.07.11 "de la Nova" Soleil
-Added Thursday, Jul 11, 2024:
-  - Auberge-Refuge de la Nova
-  - Les Chambres du Soleil
-
->> montblanc plan show
-Wednesday, Jul 03, 2024:
-  - Refuge du Lac Blanc
-Thursday, Jul 11, 2024:
-  - Les Chambres du Soleil
-  - Auberge-Refuge de la Nova
-
->> montblanc plan check
-Refuge Refuge du Lac Blanc is not yet bookable.
-Les Chambres du Soleil has 0 places left on Thursday, Jul 11, 2024
-Auberge-Refuge de la Nova has 0 places left on Thursday, Jul 11, 2024
-Waiting to check availability: 04:40
+montblanc check <date> <refuges...>
 ```
 
+Check one or more refuges on a specific date. Refuges can be partial names or IDs — the app fuzzy-matches them.
 
-# General Note
+```bash
+montblanc check 2026-07-01 "Bon Abri" Glaciers
 
-This script has plenty of caching and rate-limiting built in so we don't flood the website and make them angry. Don't mess with the rate limits, or this will end up broken _very_ quickly.
+# Also supports other date formats
+montblanc check 2026.07.01 32400
+montblanc check 01/07/2026 nova soleil
+```
+
+Options:
+- `-m` / `--min-places` — alert threshold (default: 3). Beeps when a refuge has at least this many places.
+- `-s` / `--silent` — suppress audio alerts
+
+The command runs in a loop, rechecking every 5 minutes until you press Ctrl+C.
+
+### Plan a trip
+
+Build a multi-day plan and monitor all dates at once.
+
+```bash
+# Add nights to your plan
+montblanc plan day 2026-07-03 "lac blanc"
+montblanc plan day 2026-07-04 "Rifugio Elena"
+montblanc plan day 2026-07-11 "de la Nova" Soleil
+
+# View your plan
+montblanc plan show
+
+# Check availability for every night in the plan
+montblanc plan check
+```
+
+Options for `plan day` / `plan check` / `plan show`:
+- `-p` / `--path` — path to the plan file (default: `~/.montblanc/default_plan.json`)
+
+Options for `plan check`:
+- `-m` / `--min-places` — alert threshold (default: 3)
+- `-s` / `--silent` — suppress audio alerts
+
+
+## General Notes
+
+This script has plenty of caching and rate-limiting built in so we don't flood the websites and make them angry. Don't mess with the rate limits, or this will end up broken _very_ quickly.
+
+I haven't extensively checked the distance between huts that is shown in the web GUI; I pulled that data from another website. Use at your own risk, and submit a pull request in case that's not correct.
