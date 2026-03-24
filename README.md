@@ -2,7 +2,7 @@
 
 Check refuge (mountain hut) availability along the **Tour du Mont Blanc** hiking route. The app scrapes availability data from [montourdumontblanc.com](https://www.montourdumontblanc.com) and independent booking systems, then presents it through a CLI and a web-based itinerary planner.
 
-The idea is that you put all of the refuges you would be willing to stay at on any given night, than the application tries to find a combination of available refuges across your entire trip. This is especially useful for the popular summer months when places open up unpredictably.
+The idea is that you put all of the refuges you would be willing to stay at on any given night, than the application tries to find a combination of refuges that have availability across your entire trip. This is especially useful for the popular summer months when places open up unpredictably.
 
 ![image](image.png)
 
